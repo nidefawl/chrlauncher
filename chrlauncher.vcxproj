@@ -70,8 +70,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
-    <TargetName>$(ProjectName)</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <TargetName>$(ProjectName)-$(Configuration)</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\..\routine\;.\src\include\;.\src\;</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;.\src\lib\32\</LibraryPath>
     <GenerateManifest>false</GenerateManifest>
@@ -79,8 +79,8 @@
     <CodeAnalysisRuleSet>MixedRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
-    <TargetName>$(ProjectName)</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <TargetName>$(ProjectName)-$(Configuration)</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\..\routine\;.\src\include\;.\src\;</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;.\src\lib\32\</LibraryPath>
     <GenerateManifest>false</GenerateManifest>
@@ -88,8 +88,8 @@
     <CodeAnalysisRuleSet>MixedRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
-    <TargetName>$(ProjectName)</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <TargetName>$(ProjectName)-$(Configuration)</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\..\routine\;.\src\include\;.\src\;</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;.\src\lib\64\</LibraryPath>
     <GenerateManifest>false</GenerateManifest>
@@ -97,8 +97,8 @@
     <CodeAnalysisRuleSet>MixedRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
-    <TargetName>$(ProjectName)</TargetName>
+    <OutDir>$(SolutionDir)\bin\</OutDir>
+    <TargetName>$(ProjectName)-$(Configuration)</TargetName>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\..\routine\;.\src\include\;.\src\;</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;.\src\lib\64\</LibraryPath>
     <GenerateManifest>false</GenerateManifest>
@@ -116,7 +116,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX;APP_HAVE_TRAY;APP_STARTMINIMIZED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX=2;APP_HAVE_TRAY;APP_STARTMINIMIZED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -149,7 +149,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX;APP_HAVE_TRAY;APP_STARTMINIMIZED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX=2;APP_HAVE_TRAY;APP_STARTMINIMIZED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -186,7 +186,7 @@
       <CallingConvention>StdCall</CallingConvention>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX;APP_HAVE_TRAY;APP_STARTMINIMIZED;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX=2;APP_HAVE_TRAY;APP_STARTMINIMIZED;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableParallelCodeGeneration>
       </EnableParallelCodeGeneration>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -222,7 +222,7 @@
       <CallingConvention>StdCall</CallingConvention>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX;APP_HAVE_TRAY;APP_STARTMINIMIZED;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS;_UNICODE;UNICODE;WIN32_LEAN_AND_MEAN;APP_NO_APPDATA;APP_NO_DEPRECATIONS;APP_NO_MUTEX=2;APP_HAVE_TRAY;APP_STARTMINIMIZED;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableParallelCodeGeneration>
       </EnableParallelCodeGeneration>
       <BufferSecurityCheck>true</BufferSecurityCheck>

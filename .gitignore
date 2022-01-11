@@ -4,6 +4,8 @@ temp/
 bin/32/
 bin/64/
 bin/arm64/
+bin/profile/
+bin/bin/
 x64/
 win32/
 arm64/
