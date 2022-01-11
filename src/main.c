@@ -20,12 +20,6 @@
 #include "resource.h"
 
 
-typedef struct TASK_CHECK_VERSION
-{
-	_Inout_ PBROWSER_INFORMATION pbi;
-	_Out_ INT errorcode;
-} TASK_CHECK_VERSION, *PTASK_CHECK_VERSION;
-
 #define APP_MSG_FETCHED_VERSION (WM_APP + 100)
 #define APP_MSG_FINISHED_DOWNLOAD (WM_APP + 101)
 #define APP_MSG_FINISHED_INSTALLATION (WM_APP + 102)
@@ -35,6 +29,7 @@ R_QUEUED_LOCK lock_download = PR_QUEUED_LOCK_INIT;
 R_QUEUED_LOCK lock_thread = PR_QUEUED_LOCK_INIT;
 
 R_WORKQUEUE workqueue;
+
 
 /*
 BOOL CALLBACK activate_browser_window_callback (_In_ HWND hwnd, _In_ LPARAM lparam)
@@ -139,7 +134,7 @@ VOID update_browser_info (_In_ HWND hwnd, _In_ PBROWSER_INFORMATION pbi)
 // - checks config settings
 // - retrieves current version from .exe
 // - parses command line args
-VOID init_browser_info (_Inout_ PBROWSER_INFORMATION pbi)
+VOID init_browser_info (_Inout_ PBROWSER_INFORMATION pbi, _In_ PCONSTCMDLINE_OPTS pcopts)
 {
 	static R_STRINGREF bin_names[] = {
 		PR_STRINGREF_INIT (L"brave.exe"),
@@ -161,6 +156,14 @@ VOID init_browser_info (_Inout_ PBROWSER_INFORMATION pbi)
 
 	// Reset
 	pbi->browser_arguments = NULL;
+
+	//copy cmd line args
+	pbi->is_autodownload = pcopts->is_autodownload;
+	pbi->is_bringtofront = pcopts->is_bringtofront;
+	pbi->is_forcecheck = pcopts->is_forcecheck;
+	pbi->is_waitdownloadend = pcopts->is_waitdownloadend;
+	pbi->is_onlyupdate = pcopts->is_onlyupdate;
+	pbi->optional_argv = pcopts->optional_argv;
 
 	// Configure paths
 	PR_STRING binary_dir;
@@ -238,7 +241,6 @@ VOID init_browser_info (_Inout_ PBROWSER_INFORMATION pbi)
 	// Set common data
 	PR_STRING browser_type;
 	PR_STRING browser_arguments;
-	PR_STRING pass_args = NULL;
 
 	browser_type = _r_config_getstring (L"ChromiumType", L"dev-codecs-sync");
 	browser_arguments = _r_config_getstringexpand (L"ChromiumCommandLine", L"--user-data-dir=..\\profile --no-default-browser-check");
@@ -253,62 +255,6 @@ VOID init_browser_info (_Inout_ PBROWSER_INFORMATION pbi)
 	_r_obj_movereference (&pbi->browser_name, _r_format_string (L"%s (%" PR_LONG L"-bit)", pbi->browser_type->buffer, pbi->architecture));
 	_r_obj_movereference (&pbi->current_version, _r_res_queryversionstring (pbi->binary_path->buffer));
 
-	// Parse command line
-	{
-		LPWSTR *arga;
-		LPWSTR key;
-		SIZE_T first_arg_length = 0;
-		INT numargs;
-
-		arga = CommandLineToArgvW (_r_sys_getimagecommandline (), &numargs);
-
-		if (arga)
-		{
-
-			for (INT i = 1; i < numargs; i++)
-			{
-				key = arga[i];
-
-				if (_r_str_compare_length (key, L"/autodownload", 13) == 0)
-				{
-					pbi->is_autodownload = TRUE;
-				}
-
-				if (_r_str_compare_length (key, L"/autodownload", 13) == 0)
-				{
-					pbi->is_autodownload = TRUE;
-				}
-				else if (_r_str_compare_length (key, L"/bringtofront", 13) == 0)
-				{
-					pbi->is_bringtofront = TRUE;
-				}
-				else if (_r_str_compare_length (key, L"/forcecheck", 11) == 0)
-				{
-					pbi->is_forcecheck = TRUE;
-				}
-				else if (_r_str_compare_length (key, L"/wait", 5) == 0)
-				{
-					pbi->is_waitdownloadend = TRUE;
-				}
-				else if (_r_str_compare_length (key, L"/update", 7) == 0)
-				{
-					pbi->is_onlyupdate = TRUE;
-				}
-				else
-				{
-					// append all unused arguments to string pass_args
-					// add a space if it is not the first argument
-					_r_obj_movereference (&pass_args, _r_obj_concatstrings (3, _r_obj_getstring (pass_args), pass_args ? L" " : NULL, arga[i]));
-				}
-
-			}
-
-			LocalFree (arga);
-
-			if (pass_args)
-				_r_obj_movereference (&pbi->optional_argv, pass_args);
-		}
-	}
 
 	pbi->check_period = _r_config_getlong (L"ChromiumCheckPeriod", 2);
 
@@ -495,8 +441,6 @@ INT _app_openbrowser (_In_ PBROWSER_INFORMATION pbi)
 										   (_r_obj_isstringempty(args) ? NULL : L" "),
 										   _r_obj_getstring(args));
 
-	_r_log (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"_app_openbrowser,binary_dir", 0, pbi->binary_dir->buffer);
-	_r_log (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"_app_openbrowser,binary_path", 0, pbi->binary_path->buffer);
 	_r_log (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"_app_openbrowser,commandline", 0, commandline->buffer);
 
 	STARTUPINFO startup_info = {0};
@@ -1167,13 +1111,16 @@ INT _app_installupdate (_In_ HWND hwnd, _Inout_ PBROWSER_INFORMATION pbi)
 
 VOID _app_thread_check_for_new_version (_In_ PVOID arglist, _In_ ULONG busy_count)
 {
-	PTASK_CHECK_VERSION task = (PTASK_CHECK_VERSION)arglist;
+	PTHREAD_CHECKVERSION_CONTEXT task = (PTHREAD_CHECKVERSION_CONTEXT)arglist;
 	task->errorcode = _app_fetch_version_info_from_url (task->pbi);
 }
 
 VOID _app_thread_download_and_install (_In_ PVOID arglist, _In_ ULONG busy_count)
 {
-	HWND hwnd = (HWND) arglist;
+	PAPPWINDOW_CONTEXT pappcontext = (PAPPWINDOW_CONTEXT) arglist;
+	HWND hwnd = (HWND) pappcontext->hwnd;
+
+	// Use thread local bi
 	PBROWSER_INFORMATION pbi;
 	INT errorcode = 0;
 
@@ -1185,7 +1132,7 @@ VOID _app_thread_download_and_install (_In_ PVOID arglist, _In_ ULONG busy_count
 
 	pbi = _r_mem_allocatezero (sizeof (BROWSER_INFORMATION));
 
-	init_browser_info (pbi);
+	init_browser_info (pbi, pappcontext->pcopts);
 
 	_r_ctrl_enable (hwnd, IDC_START_BTN, FALSE);
 	_r_progress_setmarquee (hwnd, IDC_PROGRESS, TRUE);
@@ -1310,15 +1257,16 @@ VOID _app_destroy ()
 
 INT_PTR CALLBACK DlgProc (_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM wparam, _In_ LPARAM lparam)
 {
-	PBROWSER_INFORMATION browser_info = GetProp (hwnd, L"browser_info");
+	PAPPWINDOW_CONTEXT pappcontext = (PAPPWINDOW_CONTEXT) GetProp (hwnd, L"appcontext");
+	PBROWSER_INFORMATION browser_info = pappcontext ? pappcontext->pbi : NULL;
 	switch (msg)
 	{
 		case WM_INITDIALOG:
 		{
 			HWND htip;
 
-			browser_info = (PBROWSER_INFORMATION)lparam;
-			SetProp (hwnd, L"browser_info", browser_info);
+			pappcontext = (PAPPWINDOW_CONTEXT)lparam;
+			SetProp (hwnd, L"appcontext", pappcontext);
 			SetProp (hwnd, L"browser_started", 0);
 
 			htip = _r_ctrl_createtip (hwnd);
@@ -1423,7 +1371,7 @@ INT_PTR CALLBACK DlgProc (_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM wparam, _In
 			{
 				_r_ctrl_enable (hwnd, IDC_START_BTN, FALSE);
 				_r_workqueue_waitforfinish (&workqueue);
-				_r_workqueue_queueitem (&workqueue, &_app_thread_download_and_install, hwnd);
+				_r_workqueue_queueitem (&workqueue, &_app_thread_download_and_install, pappcontext);
 			}
 			else
 			{
@@ -1505,9 +1453,7 @@ INT_PTR CALLBACK DlgProc (_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM wparam, _In
 		{
 			_r_tray_destroy (hwnd, &GUID_TrayIcon);
 
-			SetProp (hwnd, L"browser_info", NULL);
-			if (browser_info)
-				_r_mem_free (browser_info);
+			SetProp (hwnd, L"pappcontext", NULL);
 
 			PostQuitMessage (0);
 			break;
@@ -1798,7 +1744,7 @@ INT_PTR CALLBACK DlgProc (_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM wparam, _In
 					if (!_r_queuedlock_islocked (&lock_download))
 					{
 						_r_workqueue_waitforfinish (&workqueue);
-						_r_workqueue_queueitem (&workqueue, &_app_thread_download_and_install, hwnd);
+						_r_workqueue_queueitem (&workqueue, &_app_thread_download_and_install, pappcontext);
 					}
 					break;
 				}
@@ -1811,21 +1757,21 @@ INT_PTR CALLBACK DlgProc (_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM wparam, _In
 	return 0;
 }
 
-INT run_application (_In_ LPWSTR cmdline)
+INT run_application (_In_ PCONSTCMDLINE_OPTS pcopts)
 {
-	TASK_CHECK_VERSION taskcheckversion;
-	PBROWSER_INFORMATION browser_info;
+	BROWSER_INFORMATION app_browser_info = {0};
+	PBROWSER_INFORMATION browser_info = &app_browser_info;
+	THREAD_CHECKVERSION_CONTEXT checkversion_context = {0};
 	BOOLEAN is_exists;
 	BOOLEAN is_checkversion;
 	BOOLEAN is_outdated;
 
-	browser_info = _r_mem_allocatezero (sizeof (BROWSER_INFORMATION));
 
 	// check current version parse command line parameters
-	init_browser_info (browser_info);
+	init_browser_info (browser_info, pcopts);
 
-	taskcheckversion.pbi = browser_info;
-	taskcheckversion.errorcode = 0;
+	checkversion_context.pbi = browser_info;
+	checkversion_context.errorcode = 0;
 
 	is_exists = _r_fs_exists (browser_info->binary_path->buffer);
 	is_checkversion = _app_need_fetch_remote_version (browser_info);
@@ -1836,26 +1782,27 @@ INT run_application (_In_ LPWSTR cmdline)
 
 	if (!is_exists || is_checkversion)
 	{
-		taskcheckversion.errorcode = -1;
+		checkversion_context.errorcode = -1;
 
 		// start a task on a thread to check for a new version
 		// this could be done on the current thread, since we have a blocking wait after
-		_r_workqueue_queueitem (&workqueue, &_app_thread_check_for_new_version, &taskcheckversion);
+		_r_workqueue_queueitem (&workqueue, &_app_thread_check_for_new_version, &checkversion_context);
 
 		// wait for thread task to finish (blocking)
 		_r_workqueue_waitforfinish (&workqueue);
 
-		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", taskcheckversion.errorcode, L"TASK_CHECK_VERSION errorcode %d", taskcheckversion.errorcode);
+		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", checkversion_context.errorcode, L"TASK_CHECK_VERSION errorcode %d", checkversion_context.errorcode);
 		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"Remote version %s", _r_obj_getstring (browser_info->new_version));
 	}
 
 	is_outdated = _app_is_local_version_outdated (browser_info);
 
-	_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"is_outdated: %d", is_outdated);
+	if (is_checkversion)
+		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"is_outdated: %d", is_outdated);
 
 
 	// Open browser if we are up to date
-	if (!taskcheckversion.errorcode && is_exists && !browser_info->is_onlyupdate && !is_outdated)
+	if (!checkversion_context.errorcode && is_exists && !browser_info->is_onlyupdate && !is_outdated)
 	{
 		INT errorcode = _app_openbrowser (browser_info);
 
@@ -1865,14 +1812,99 @@ INT run_application (_In_ LPWSTR cmdline)
 		// Opening browser failed
 	}
 
+	APPWINDOW_CONTEXT appcontext = {pcopts, browser_info, NULL, 0};
 
-	HWND hwnd = _r_app_createwindow_ex (NULL, MAKEINTRESOURCE (IDD_MAIN), MAKEINTRESOURCE (IDI_MAIN), NULL, &DlgProc, browser_info);
+	appcontext.hwnd = _r_app_createwindow_ex (NULL, MAKEINTRESOURCE (IDD_MAIN), MAKEINTRESOURCE (IDI_MAIN), NULL, &DlgProc, &appcontext);
 
-	if (!hwnd)
+	if (!appcontext.hwnd)
 		return (INT) GetLastError (); // window creation failed
 
 	// pass along message loop return value as exit code
-	return _r_wnd_messageloop (hwnd, MAKEINTRESOURCE (IDA_MAIN));
+	return _r_wnd_messageloop (appcontext.hwnd, MAKEINTRESOURCE (IDA_MAIN));
+}
+
+
+VOID parse_commandline (_In_ LPWSTR cmdline, _Inout_ PCMDLINE_OPTS popts)
+{
+	LPWSTR *arga;
+	INT numargs;
+
+	if (popts)
+		memset (popts, 0, sizeof (PCMDLINE_OPTS));
+
+	arga = CommandLineToArgvW (cmdline, &numargs);
+
+	if (arga && popts)
+	{
+		LPWSTR key;
+		PR_STRING pass_args = NULL;
+
+		for (INT i = 1; i < numargs; i++)
+		{
+			key = arga[i];
+
+			if (_r_str_compare_length (key, L"/autodownload", 13) == 0)
+			{
+				popts->is_autodownload = TRUE;
+			}
+			else if (_r_str_compare_length (key, L"/bringtofront", 13) == 0)
+			{
+				popts->is_bringtofront = TRUE;
+			}
+			else if (_r_str_compare_length (key, L"/forcecheck", 11) == 0)
+			{
+				popts->is_forcecheck = TRUE;
+			}
+			else if (_r_str_compare_length (key, L"/wait", 5) == 0)
+			{
+				popts->is_waitdownloadend = TRUE;
+			}
+			else if (_r_str_compare_length (key, L"/update", 7) == 0)
+			{
+				popts->is_onlyupdate = TRUE;
+			}
+			else if (_r_str_compare_length (key, L"/ini", 4) == 0)
+			{
+				if (i + 1 < numargs)
+				{
+					_r_log (LOG_LEVEL_DEBUG, NULL, L"ini_path", i + 1, arga[i + 1]);
+					popts->ini_path = _r_obj_createstring (arga[i + 1]);
+					i++;
+				}
+			}
+			else
+			{
+				_r_log (LOG_LEVEL_DEBUG, NULL, L"Browser arg", i, key);
+				// append all unused arguments to string pass_args
+				// add a space if it is not the first argument
+				_r_obj_movereference (&pass_args, _r_obj_concatstrings (3, _r_obj_getstring (pass_args), pass_args ? L" " : NULL, arga[i]));
+			}
+
+		}
+
+		LocalFree (arga);
+
+		if (pass_args)
+			_r_obj_movereference (&popts->optional_argv, pass_args);
+	}
+}
+
+
+CMDLINE_OPTS cmdline_opts;
+
+BOOLEAN _r_sys_getopt (
+	_In_ LPCWSTR args,
+	_In_ LPCWSTR name,
+	_Out_opt_ PR_STRING_PTR out_value
+)
+{
+	if (out_value && !_r_str_compare (name, L"ini") && !_r_obj_isstringempty(cmdline_opts.ini_path))
+	{
+		*out_value = _r_obj_createstring2 (cmdline_opts.ini_path);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 INT APIENTRY wWinMain (_In_ HINSTANCE hinst, _In_opt_ HINSTANCE prev_hinst, _In_ LPWSTR cmdline, _In_ INT show_cmd)
@@ -1883,13 +1915,16 @@ INT APIENTRY wWinMain (_In_ HINSTANCE hinst, _In_opt_ HINSTANCE prev_hinst, _In_
 	if (!_r_app_initialize ())
 		return ERROR_APP_INIT_FAILURE;
 
+	// Parse command line
+	parse_commandline (GetCommandLineW (), &cmdline_opts);
+
 	_app_initialize ();
 
 	path = _r_app_getdirectory ();
 
 	SetCurrentDirectory (path->buffer);
 
-	exitcode = run_application (cmdline);
+	exitcode = run_application (&cmdline_opts);
 
 	_app_destroy ();
 
