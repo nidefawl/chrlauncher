@@ -1825,7 +1825,8 @@ INT_PTR CALLBACK DlgProc (_In_ HWND hwnd, _In_ UINT msg, _In_ WPARAM wparam, _In
 						_r_progress_setmarquee (hwnd, IDC_PROGRESS, FALSE);
 						_r_ctrl_enable (hwnd, IDC_START_BTN, TRUE);
 						_r_ctrl_setstring (hwnd, IDC_START_BTN, _r_locale_getstring (_app_getactionid (browser_info)));
-						_r_status_settext (hwnd, IDC_STATUSBAR, 0, L"Installation complete");
+						if (task_idmsg == IDM_TASK_INSTALLATION)
+							_r_status_settext (hwnd, IDC_STATUSBAR, 0, L"Installation complete");
 
 						if (!browser_info->is_onlyupdate)
 						{
