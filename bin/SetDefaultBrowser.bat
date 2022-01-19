@@ -1,11 +1,11 @@
 @echo off
 
-set "CHRLAUNCHER_NAME=chrlauncher"
-set "CHRLAUNCHER_NAME_SHORT=chrlauncher"
+set "CHRLAUNCHER_NAME=chromiumlauncher"
+set "CHRLAUNCHER_NAME_SHORT=chromiumlauncher"
 set "CHRLAUNCHER_DESCRIPTION=Chromium portable launcher and updater"
-set "CHRLAUNCHER_PATH=%~dp0chrlauncher.exe"
+set "CHRLAUNCHER_PATH=%~dp0chromiumlauncher.exe"
 set "CHRLAUNCHER_ICON=\"%CHRLAUNCHER_PATH%\",0"
-set "CHRLAUNCHER_ARGS=\"%CHRLAUNCHER_PATH%\" \"%%1\""
+set "CHRLAUNCHER_ARGS=\"%CHRLAUNCHER_PATH%\" --single-argument \"%%1\""
 
 if not exist "%CHRLAUNCHER_PATH%" (
 
