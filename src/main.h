@@ -27,7 +27,7 @@ typedef struct CMDLINE_OPTS
 
 typedef CONST CMDLINE_OPTS *PCONSTCMDLINE_OPTS;
 
-typedef struct BROWSER_INFORMATION
+typedef struct BROWSER_PROCESS_ARGS
 {
 	// optional_argv
 	//
@@ -41,6 +41,10 @@ typedef struct BROWSER_INFORMATION
 	// Arguments provided from configuration
 	// This might include flags like --user-data-dir=...
 	PR_STRING browser_arguments;
+} BROWSER_PROCESS_ARGS, *PBROWSER_PROCESS_ARGS;
+
+typedef struct BROWSER_INFORMATION
+{
 	PR_STRING browser_name;
 	PR_STRING browser_type;
 	PR_STRING cache_path;
@@ -67,12 +71,28 @@ typedef struct THREAD_CHECKVERSION_CONTEXT
 {
 	_Inout_ PBROWSER_INFORMATION pbi;
 	_Out_ INT errorcode;
+	_Out_ PR_STRING error_context;
 } THREAD_CHECKVERSION_CONTEXT, *PTHREAD_CHECKVERSION_CONTEXT;
+typedef struct THREAD_UPDATER_CONTEXT
+{
+	_In_ HWND hwnd;
+	_In_ PCONSTCMDLINE_OPTS pcopts;
+} THREAD_UPDATER_CONTEXT, *PTHREAD_UPDATER_CONTEXT;
+
+typedef struct THREAD_UPDATER_RESULT
+{
+	_Out_ BROWSER_INFORMATION updated_bi;
+	_Out_ INT errorcode;
+	_Out_ INT task_idmsg;
+	_Out_ PR_STRING error_context;
+} THREAD_UPDATER_RESULT, *PTHREAD_UPDATER_RESULT;
+
 
 typedef struct APPWINDOW_CONTEXT
 {
 	PCONSTCMDLINE_OPTS pcopts;
 	PBROWSER_INFORMATION pbi;
+	PBROWSER_PROCESS_ARGS pba;
 	HWND hwnd;
 	INT exitcode;
 } APPWINDOW_CONTEXT, *PAPPWINDOW_CONTEXT;
