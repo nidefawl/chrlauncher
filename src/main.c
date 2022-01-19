@@ -1775,7 +1775,7 @@ INT run_application (_In_ PCONSTCMDLINE_OPTS pcopts)
 
 	is_exists = _r_fs_exists (browser_info->binary_path->buffer);
 	is_checkversion = _app_need_fetch_remote_version (browser_info);
-	is_outdated = FALSE;
+	is_outdated = _app_is_local_version_outdated (browser_info);
 
 	_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"binary_path %s", _r_obj_getstring (browser_info->binary_path));
 	_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"Local version %s", _r_obj_getstring (browser_info->current_version));
@@ -1793,9 +1793,18 @@ INT run_application (_In_ PCONSTCMDLINE_OPTS pcopts)
 
 		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", checkversion_context.errorcode, L"TASK_CHECK_VERSION errorcode %d", checkversion_context.errorcode);
 		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"Remote version %s", _r_obj_getstring (browser_info->new_version));
-	}
 
-	is_outdated = _app_is_local_version_outdated (browser_info);
+		if (!checkversion_context.errorcode)
+		{
+			is_outdated = _app_is_local_version_outdated (browser_info);
+
+			if (is_exists && !is_outdated)
+			{
+				LONG64 tm_now = _r_unixtime_now ();
+				_r_config_setlong64 (L"ChromiumLastCheck", tm_now);
+			}
+		}
+	}
 
 	if (is_checkversion)
 		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"is_outdated: %d", is_outdated);
