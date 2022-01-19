@@ -134,7 +134,7 @@ END
 //
 // Icon resources
 //
-IDI_MAIN		ICON		"res\\100.ico"
+IDI_MAIN		ICON		"res\\chromiumlauncher.ico"
 
 //
 // Manifest resource
