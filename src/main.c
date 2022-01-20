@@ -668,7 +668,7 @@ INT _app_downloadupdate (_In_ PVOID ctx, _In_ PBROWSER_INFORMATION pbi)
 
 	temp_file = _r_obj_concatstrings (2, pbi->cache_path->buffer, L".tmp");
 
-	//_r_fs_deletefile (pbi->cache_path->buffer, TRUE);
+	_r_fs_deletefile (pbi->cache_path->buffer, TRUE);
 
 	_r_queuedlock_acquireshared (&lock_download);
 
@@ -703,7 +703,7 @@ INT _app_downloadupdate (_In_ PVOID ctx, _In_ PBROWSER_INFORMATION pbi)
 			{
 				_r_log (LOG_LEVEL_ERROR, &GUID_TrayIcon, TEXT (__FUNCTION__), errorcode, pbi->download_url->buffer);
 
-				//_r_fs_deletefile (pbi->cache_path->buffer, TRUE);
+				_r_fs_deletefile (pbi->cache_path->buffer, TRUE);
 
 			}
 
