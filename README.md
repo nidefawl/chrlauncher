@@ -6,7 +6,7 @@ chromiumlauncher
 
 ### Settings
 
-see default [chromiumlauncher.ini](https://github.com/nidefawl/chromiumlauncher/blob/3637da50a4057c233877035a18194eeaec8cf2da/bin/chromiumlauncher.ini)
+see default [chromiumlauncher.ini](https://github.com/nidefawl/chromiumlauncher/blob/master/bin/chromiumlauncher.ini)
 
 
 ### Command line:
