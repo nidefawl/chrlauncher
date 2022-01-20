@@ -2011,8 +2011,11 @@ INT run_application (_In_ PCONSTCMDLINE_OPTS pcopts)
 		_r_log_v (LOG_LEVEL_DEBUG, &GUID_TrayIcon, L"before_window", 0, L"is_outdated: %d", is_outdated);
 
 
-	// Open browser if we are up to date
-	if (is_exists && !browser_info->is_onlyupdate && !is_outdated)
+	// Open browser if:
+	// - browser is installed
+	// - AND launcher is not used as pure updater
+	// - AND browser is outdated and can be updated now
+	if (is_exists && !browser_info->is_onlyupdate && (!is_outdated || _app_browserisrunning (browser_info)))
 	{
 
 		PR_STRING browser_cmdline_inspect = {0};
